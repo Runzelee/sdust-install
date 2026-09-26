@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PRIMARY_BASE="http://192.168.18.86/sdust"
-FALLBACK_BASE1="https://hk.gh-proxy.org/https://github.com/Runzelee/sdust-install/raw/refs/heads/main"
-FALLBACK_BASE2="https://github.com/Runzelee/sdust-install/raw/refs/heads/main"
+# 公网安装脚本（由 GitHub 仓库 Runzelee/sdust-install 分发）：
+# 直接从 GitHub（含加速镜像）下载，不再尝试内网源。
+PRIMARY_BASE="https://hk.gh-proxy.org/https://github.com/Runzelee/sdust-install/raw/refs/heads/main"
+FALLBACK_BASE="https://github.com/Runzelee/sdust-install/raw/refs/heads/main"
 INSTALL_DIR="$HOME/.local/bin"
 BIN_NAME="sdust"
 
@@ -25,8 +26,7 @@ case "$OS" in
 esac
 
 PRIMARY_URL="$PRIMARY_BASE/$TARGET"
-FALLBACK_URL1="$FALLBACK_BASE1/$TARGET"
-FALLBACK_URL2="$FALLBACK_BASE2/$TARGET"
+FALLBACK_URL="$FALLBACK_BASE/$TARGET"
 
 echo "系统: $OS ($ARCH)"
 
@@ -35,33 +35,23 @@ mkdir -p "$INSTALL_DIR"
 download_success=false
 
 if command -v curl &>/dev/null; then
-    echo "尝试从内网下载: $PRIMARY_URL"
-    if curl -fSL --connect-timeout 3 "$PRIMARY_URL" -o "$INSTALL_DIR/$BIN_NAME" 2>/dev/null; then
+    echo "尝试从镜像下载: $PRIMARY_URL"
+    if curl -fSL --connect-timeout 5 "$PRIMARY_URL" -o "$INSTALL_DIR/$BIN_NAME" 2>/dev/null; then
         download_success=true
     else
-        echo "内网访问失败，尝试使用备用镜像链接下载: $FALLBACK_URL1"
-        if curl -fSL --connect-timeout 5 "$FALLBACK_URL1" -o "$INSTALL_DIR/$BIN_NAME" 2>/dev/null; then
+        echo "镜像访问失败，尝试使用 GitHub 原链接下载: $FALLBACK_URL"
+        if curl -fSL "$FALLBACK_URL" -o "$INSTALL_DIR/$BIN_NAME"; then
             download_success=true
-        else
-            echo "备用镜像访问失败，尝试使用 GitHub 原链接下载: $FALLBACK_URL2"
-            if curl -fSL "$FALLBACK_URL2" -o "$INSTALL_DIR/$BIN_NAME"; then
-                download_success=true
-            fi
         fi
     fi
 elif command -v wget &>/dev/null; then
-    echo "尝试从内网下载: $PRIMARY_URL"
-    if wget -q --timeout=3 --tries=1 "$PRIMARY_URL" -O "$INSTALL_DIR/$BIN_NAME" 2>/dev/null; then
+    echo "尝试从镜像下载: $PRIMARY_URL"
+    if wget -q --timeout=5 --tries=1 "$PRIMARY_URL" -O "$INSTALL_DIR/$BIN_NAME" 2>/dev/null; then
         download_success=true
     else
-        echo "内网访问失败，尝试使用备用镜像链接下载: $FALLBACK_URL1"
-        if wget -q --timeout=5 --tries=1 "$FALLBACK_URL1" -O "$INSTALL_DIR/$BIN_NAME" 2>/dev/null; then
+        echo "镜像访问失败，尝试使用 GitHub 原链接下载: $FALLBACK_URL"
+        if wget -q "$FALLBACK_URL" -O "$INSTALL_DIR/$BIN_NAME"; then
             download_success=true
-        else
-            echo "备用镜像访问失败，尝试使用 GitHub 原链接下载: $FALLBACK_URL2"
-            if wget -q "$FALLBACK_URL2" -O "$INSTALL_DIR/$BIN_NAME"; then
-                download_success=true
-            fi
         fi
     fi
 else
